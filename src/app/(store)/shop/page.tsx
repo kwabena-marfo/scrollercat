@@ -50,13 +50,15 @@ export default async function ShopPage({ searchParams }: { searchParams: SearchP
         </p>
       </div>
 
-      <div className="mt-6 grid gap-8 lg:grid-cols-[220px_1fr]">
+      {/* minmax(0, …) columns: without them the scrolling category row sets the
+          column's minimum width and the page overflows on phones. */}
+      <div className="mt-6 grid grid-cols-1 gap-8 lg:grid-cols-[220px_minmax(0,1fr)]">
         {/* CATEGORIES */}
         <aside>
           <h2 className="mb-2 text-xs font-bold uppercase tracking-wider text-muted-foreground">
             Categories
           </h2>
-          <nav className="flex gap-2 overflow-x-auto pb-2 lg:flex-col lg:gap-0.5 lg:overflow-visible">
+          <nav className="no-scrollbar flex gap-2 overflow-x-auto pb-2 lg:flex-col lg:gap-0.5 lg:overflow-visible">
             <CategoryLink href={hrefWith({ category: undefined, page: undefined })} active={!activeCategory}>
               All
             </CategoryLink>
