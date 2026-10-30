@@ -1,0 +1,327 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+//////////////////////////////////////////////////////
+// CATALOGUE
+//////////////////////////////////////////////////////
+model Category {
+  id        String    @id @default(auto()) @map("_id") @db.ObjectId
+  name      String
+  slug      String    @unique
+  products  Product[]
+  createdAt DateTime  @default(now())
+
+  @@map("categories")
+}
+
+// Shown as a badge on the product card and page.
+enum ProductCondition {
+  NEW
+  USED
+  REFURBISHED
+}
+
+model Product {
+  id             String  @id @default(auto()) @map("_id") @db.ObjectId
+  name           String
+  slug           String  @unique
+  description    String  @default("")
+  condition      ProductCondition @default(NEW)
+  // Prices are cedis (GHS). Paystack takes pesewas — see helpers/money.ts.
+  price          Float
+  // The "was" price shown struck through, when the product is on offer.
+  compareAtPrice Float?
+  stock          Int     @default(0)
+  images         String[]
+  featured       Boolean @default(false)
+  // Hidden from the shop (but kept, so past orders still link to it).
+  active         Boolean @default(true)
+
+  categoryId String?   @db.ObjectId
+  category   Category? @relation(fields: [categoryId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("products")
+}
+
+//////////////////////////////////////////////////////
+// CUSTOMERS
+//////////////////////////////////////////////////////
+type Address {
+  line1    String
+  city     String
+  region   String
+  country  String  @default("Ghana")
+  landmark String?
+}
+
+// Upserted by email whenever someone checks out or sends a sourcing
+// request — visitors never need an account.
+model Customer {
+  id        String            @id @default(auto()) @map("_id") @db.ObjectId
+  name      String
+  email     String            @unique
+  phone     String
+  address   Address?
+  orders    Order[]
+  requests  SourcingRequest[]
+  createdAt DateTime          @default(now())
+  updatedAt DateTime          @updatedAt
+
+  @@map("customers")
+}
+
+//////////////////////////////////////////////////////
+// SHIPPING
+//////////////////////////////////////////////////////
+model ShippingMethod {
+  id          String  @id @default(auto()) @map("_id") @db.ObjectId
+  name        String
+  description String  @default("")
+  fee         Float
+  // Free-text delivery estimate shown at checkout, e.g. "1–2 days".
+  eta         String  @default("")
+  active      Boolean @default(true)
+  sortOrder   Int     @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("shippingMethods")
+}
+
+//////////////////////////////////////////////////////
+// ORDERS (from the catalogue)
+//////////////////////////////////////////////////////
+enum OrderStatus {
+  PENDING_PAYMENT
+  PAID
+  PROCESSING
+  SHIPPED
+  DELIVERED
+  CANCELLED
+}
+
+// A snapshot of the product at the time of purchase — later price or name
+// changes don't rewrite past orders.
+type OrderItem {
+  productId String @db.ObjectId
+  name      String
+  slug      String
+  image     String?
+  price     Float
+  quantity  Int
+}
+
+model Order {
+  id          String @id @default(auto()) @map("_id") @db.ObjectId
+  orderNumber String @unique
+
+  customerId String   @db.ObjectId
+  customer   Customer @relation(fields: [customerId], references: [id])
+
+  name    String
+  email   String
+  phone   String
+  address Address
+
+  items       OrderItem[]
+  subtotal    Float
+  shippingFee Float
+  total       Float
+
+  shippingMethod String
+  status         OrderStatus @default(PENDING_PAYMENT)
+  paidAt         DateTime?
+
+  carrier        String?
+  trackingNumber String?
+  notes          String?
+
+  payments Payment[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("orders")
+}
+
+//////////////////////////////////////////////////////
+// SOURCING REQUESTS ("we'll find it and ship it")
+//////////////////////////////////////////////////////
+enum RequestStatus {
+  NEW
+  QUOTED
+  PAID
+  SOURCING
+  SHIPPED
+  DELIVERED
+  CANCELLED
+}
+
+model SourcingRequest {
+  id   String @id @default(auto()) @map("_id") @db.ObjectId
+  code String @unique
+
+  customerId String   @db.ObjectId
+  customer   Customer @relation(fields: [customerId], references: [id])
+
+  name    String
+  email   String
+  phone   String
+  address Address
+
+  productName String
+  productUrl  String?
+  details     String?
+  quantity    Int     @default(1)
+  budget      Float?
+
+  status RequestStatus @default(NEW)
+
+  // Filled in by an admin. The customer pays quoteTotal from the tracking
+  // page once the request is QUOTED.
+  quoteItemCost   Float?
+  quoteShipping   Float?
+  quoteServiceFee Float?
+  quoteTotal      Float?
+  quoteNote       String?
+  quotedAt        DateTime?
+  paidAt          DateTime?
+
+  carrier        String?
+  trackingNumber String?
+  adminNotes     String?
+
+  payments Payment[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("sourcingRequests")
+}
+
+//////////////////////////////////////////////////////
+// PAYMENTS (Paystack)
+//////////////////////////////////////////////////////
+enum PaymentKind {
+  ORDER
+  REQUEST
+}
+
+enum PaymentStatus {
+  PENDING
+  // Claimed by the webhook or the verify call while it's fulfilled — the
+  // other one waits rather than fulfilling twice (controllers/payments/fulfill.ts).
+  PROCESSING
+  SUCCESS
+  FAILED
+}
+
+model Payment {
+  id        String        @id @default(auto()) @map("_id") @db.ObjectId
+  reference String        @unique
+  kind      PaymentKind
+  status    PaymentStatus @default(PENDING)
+  email     String
+  // Cedis. What Paystack actually charged is checked against this.
+  amount    Float
+  channel   String?
+  fees      Float?
+  paidAt    DateTime?
+
+  orderId   String?          @db.ObjectId
+  order     Order?           @relation(fields: [orderId], references: [id])
+  requestId String?          @db.ObjectId
+  request   SourcingRequest? @relation(fields: [requestId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("payments")
+}
+
+//////////////////////////////////////////////////////
+// AUTH (better-auth) — store admins only
+//////////////////////////////////////////////////////
+model User {
+  id            String  @id @map("_id")
+  name          String
+  email         String
+  emailVerified Boolean @default(false)
+  image         String?
+
+  // "OWNER" | "STAFF". Sign-up is closed; admins come from `npm run seed`.
+  role   String  @default("STAFF")
+  active Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  sessions Session[]
+  accounts Account[]
+
+  @@unique([email])
+  @@map("user")
+}
+
+model Session {
+  id        String   @id @map("_id")
+  expiresAt DateTime
+  token     String
+  ipAddress String?
+  userAgent String?
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([token])
+  @@map("session")
+}
+
+model Account {
+  id         String @id @map("_id")
+  accountId  String
+  providerId String
+  password   String?
+
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  expiresAt             DateTime?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  tokenType             String?
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("account")
+}
+
+model Verification {
+  id         String   @id @map("_id")
+  identifier String
+  value      String
+  expiresAt  DateTime
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("verification")
+}

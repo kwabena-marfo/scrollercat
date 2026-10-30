@@ -1,0 +1,90 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  /* scrollerCat — swap --primary (and --brand / --ring, which follow it) to
+     recolour the UI. The logo keeps its own yellow (components/logo). */
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 222 30% 11%;
+
+    /* Page background behind white cards (admin, checkout) */
+    --page: 30 33% 97%;
+
+    --muted: 30 20% 95%;
+    --muted-foreground: 220 9% 44%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 30% 11%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 222 30% 11%;
+
+    --border: 30 15% 89%;
+    --input: 30 15% 86%;
+
+    --primary: 21 90% 50%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 30 20% 95%;
+    --secondary-foreground: 222 30% 11%;
+
+    --accent: 28 60% 95%;
+    --accent-foreground: 222 30% 11%;
+
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+
+    --ring: 21 90% 50%;
+
+    /* Links and small highlights (darker than --primary so it reads as text) */
+    --brand: 21 85% 42%;
+
+    --radius: 0.6rem;
+  }
+
+  .dark {
+    --background: 222 25% 7%;
+    --foreground: 0 0% 96%;
+
+    --page: 222 25% 5%;
+
+    --muted: 222 12% 14%;
+    --muted-foreground: 220 9% 65%;
+
+    --popover: 222 15% 10%;
+    --popover-foreground: 0 0% 96%;
+
+    --card: 222 15% 9%;
+    --card-foreground: 0 0% 96%;
+
+    --border: 222 10% 18%;
+    --input: 222 10% 21%;
+
+    --primary: 21 90% 55%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 222 12% 15%;
+    --secondary-foreground: 0 0% 96%;
+
+    --accent: 222 12% 15%;
+    --accent-foreground: 0 0% 96%;
+
+    --destructive: 0 63% 50%;
+    --destructive-foreground: 0 0% 100%;
+
+    --ring: 21 90% 55%;
+
+    --brand: 24 95% 62%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground antialiased;
+  }
+}
