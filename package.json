@@ -8,9 +8,11 @@
     "start": "next start",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
-    "db:push": "prisma db push",
-    "seed": "tsx --env-file=.env scripts/seed.ts",
-    "postinstall": "prisma generate"
+    "db:push": "node scripts/with-db.mjs prisma db push",
+    "seed": "node scripts/with-db.mjs tsx scripts/seed.ts",
+    "postinstall": "prisma generate",
+    "db:studio": "node scripts/with-db.mjs prisma studio",
+    "with-db": "node scripts/with-db.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.3.4",
