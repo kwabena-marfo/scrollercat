@@ -10,7 +10,9 @@ Built on the geared.io stack. See [`../TECH_STACK.md`](../TECH_STACK.md) for the
 ## Setup
 
 ```bash
-cp .env.example .env      # fill in DATABASE_URL, BETTER_AUTH_SECRET, PAYSTACK_SECRET_KEY, SEED_ADMIN_*
+# Create .env.local (the only env file) with MONGODB_URI, MONGODB_DB, BETTER_AUTH_URL,
+# BETTER_AUTH_SECRET, NEXT_PUBLIC_HOST, PAYSTACK_SECRET_KEY and SEED_ADMIN_*.
+# Next.js and scripts/with-db.mjs (db:push, seed, db:studio) both read it.
 npm install
 npm run db:push           # creates the MongoDB collections and indexes
 npm run seed              # first admin, plus starter categories, products and delivery options

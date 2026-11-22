@@ -1,4 +1,4 @@
-// npm run seed — creates the first admin (from SEED_ADMIN_* in .env) and,
+// npm run seed — creates the first admin (from SEED_ADMIN_* in .env.local) and,
 // on an empty database, some starter categories, products and delivery
 // options. Safe to re-run: existing records are left alone.
 import crypto from "crypto";
@@ -16,7 +16,7 @@ async function seedAdmin() {
   const name = process.env.SEED_ADMIN_NAME || "Store Admin";
 
   if (!email || password.length < 8) {
-    console.log("Skipping admin: set SEED_ADMIN_EMAIL and SEED_ADMIN_PASSWORD (8+ characters) in .env");
+    console.log("Skipping admin: set SEED_ADMIN_EMAIL and SEED_ADMIN_PASSWORD (8+ characters) in .env.local");
     return;
   }
   if (await prisma.user.findUnique({ where: { email } })) {
